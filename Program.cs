@@ -4,6 +4,20 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Adiciona o serviço CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("MyCorsPolicy", policy =>
+    {
+        policy.WithOrigins("http://127.0.0.1:5500",
+                           "https://127.0.0.1:5500",
+                           "https://localhost:7288",
+                           "http://localhost:7288") 
+               .AllowAnyHeader()
+               .AllowAnyMethod();
+    });
+});
+
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -25,6 +39,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("MyCorsPolicy");
 
 
 // Método criar transação
@@ -152,6 +167,28 @@ app.MapDelete("transactions/{id}", async (Context context, int id) =>
     }        
 })
 .WithName("DeleteTransaction")
+.WithOpenApi();
+
+//transactions / monthly /{ month}/{ year}
+app.MapGet("transactions/monthly/{month}/{year}", async (Context context, int month, int year) =>
+{
+    var transactions = await context.Transaction.ToListAsync();
+    var transactionsByMonth = transactions.Where(t => t.Month == month && t.Year == year);
+    return transactionsByMonth;
+
+})
+.WithName("GetTransactionsByMonth")
+.WithOpenApi();
+
+//"transactions/yearly/{year}")
+app.MapGet("transactions/yearly/{year}", async (Context context, int year) =>
+{
+    var transactions = await context.Transaction.ToListAsync();
+    var transactionsByYear = transactions.Where(t => t.Year == year);
+    return transactionsByYear;
+
+})
+.WithName("GetTransactionsByYear")
 .WithOpenApi();
 
 app.Run();
